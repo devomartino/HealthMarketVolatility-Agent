@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: healthmarket-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FRED_API_KEY
+        sync: false
+      - key: DB_PATH
+        value: /data/healthmarket.duckdb
+      - key: CHROMA_DIR
+        value: /data/chroma
+      - key: MODEL_DIR
+        value: /data/models
+      - key: API_URL
+        value: https://healthmarket-api.onrender.com
+    disk:
+      name: healthmarket-data
+      mountPath: /data
+      sizeGB: 1

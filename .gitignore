@@ -1,0 +1,8 @@
+venv/
+data/
+.env
+__pycache__/
+*.pyc
+*.pkl
+*.duckdb
+.pytest_cache/
