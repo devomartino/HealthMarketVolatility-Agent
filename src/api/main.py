@@ -45,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class ChatRequest(BaseModel):
     message: str
     api_key: str
@@ -54,6 +55,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     history: list[dict]
+
 
 @app.get("/health")
 def health_check():
@@ -104,7 +106,7 @@ def list_tickers():
     try:
         con = get_connection()
         df = con.execute("""
-            SELECT ticker, date, close, return_1d, return_5d, 
+            SELECT ticker, date, close, return_1d, return_5d,
                    volatility_20d, rsi_14
             FROM market_data
             WHERE (ticker, date) IN (
@@ -119,22 +121,21 @@ def list_tickers():
 
 @app.get("/timeseries/{ticker}")
 def get_timeseries(ticker: str, days: int = 90):
-    """Return daily OHLCV + indicators for a ticker over the last N days."""
     ticker = ticker.upper()
     try:
-        # Try joined view first (includes health indicators)
+        con = get_connection()
+        build_joined_view(con)
         try:
-            df = db_query(f"""
+            df = con.execute(f"""
                 SELECT date, open, high, low, close, volume,
                        return_1d, volatility_20d, rsi_14, vix
                 FROM market_health_joined
                 WHERE ticker = '{ticker}'
                 AND date >= CURRENT_DATE - INTERVAL {days} DAY
                 ORDER BY date
-            """, DB_PATH)
+            """).df()
         except Exception:
-            # Fall back to market_data only if health_indicators not yet loaded
-            df = db_query(f"""
+            df = con.execute(f"""
                 SELECT date, open, high, low, close, volume,
                        return_1d, volatility_20d, rsi_14,
                        NULL as vix
@@ -142,7 +143,7 @@ def get_timeseries(ticker: str, days: int = 90):
                 WHERE ticker = '{ticker}'
                 AND date >= CURRENT_DATE - INTERVAL {days} DAY
                 ORDER BY date
-            """, DB_PATH)
+            """).df()
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data for {ticker}")
         return df.to_dict(orient="records")
@@ -150,6 +151,7 @@ def get_timeseries(ticker: str, days: int = 90):
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
 
 @app.get("/metrics")
 def model_metrics():
