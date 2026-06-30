@@ -9,14 +9,11 @@ logger = logging.getLogger(__name__)
 
 CHROMA_DIR = os.getenv("CHROMA_DIR", "data/chroma")
 COLLECTION_NAME = "healthmarket_docs"
-EMBED_MODEL = "all-MiniLM-L6-v2"
 
 def get_collection() -> chromadb.Collection:
     Path(CHROMA_DIR).mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=CHROMA_DIR)
-    ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=EMBED_MODEL
-    )
+    ef = embedding_functions.ONNXMiniLM_L6_V2()
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
         embedding_function=ef,
